@@ -9,7 +9,24 @@
     $.fn.formLocalStorage = function(options) {
     	
     	var form_selector = this.selector;
-    	var input_selector = form_selector + " :text, " + form_selector + " :checkbox, " + form_selector + " :radio, " + form_selector + " select, " + form_selector + " textarea, " + form_selector + " [type='date']";
+    	var input_selector = form_selector + " :text, "
+    							+ form_selector + " :checkbox, " 
+    							+ form_selector + " :radio, " 
+    							+ form_selector + " select, " 
+    							+ form_selector + " textarea, " 
+    							+ form_selector + " [type='date'] " 
+    							+ form_selector + " [type='month'] " 
+    							+ form_selector + " [type='week'] " 
+    							+ form_selector + " [type='time'] " 
+    							+ form_selector + " [type='datetime'] " 
+    							+ form_selector + " [type='datetime-local'] " 
+    							+ form_selector + " [type='url'] "
+    							+ form_selector + " [type='number'] "
+    							+ form_selector + " [type='range'] "
+    							+ form_selector + " [type='search'] "
+    							+ form_selector + " [type='color'] "
+    							+ form_selector + " [type='email']";
+    	
     	
     	if(options.debug){ console.debug(this); }
     	
