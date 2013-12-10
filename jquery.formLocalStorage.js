@@ -33,7 +33,9 @@
     	//插件选项
     	var options = $.extend({
     		storage_name_perfix : ( this.context.URL + form_selector + "@" ), //暂存的命名前缀
+    		storage_events : ['change'], //触发暂存的事件
     		storage_dom_css : {"font-style":"oblique"}, //暂存内容的css(用于区分原始内容与暂存内容)
+    		storage_manual_remove_trigger_selector : "#storage_manual_remove_trigger", //手动清除暂存的触发器
     		load_ready_callback : function(){}, //暂存内容加载完毕回调
     		save_ready_callback : function(){}, //暂存内容保存完毕回调
     		remove_ready_callback : function(){}, //暂存内容删除完毕回调
@@ -45,6 +47,29 @@
     	
     	//表单加载完毕后从localStorage中载入暂存的表单内容
     	this.ready(function(){
+    		storage_load();
+    	});
+    	
+    	//监控表单内容变化并存入localStorage FIXME 动态写入的内容监控不到
+    	this.ready(function(){
+    		storage_save();
+    	});
+    	
+    	//表单提交时自动清空此表单所有暂存内容
+    	this.submit(function(){
+    		storage_remove();
+    	});
+    	
+    	//手动清空此表单的暂存内容
+    	if(options.storage_manual_remove_trigger_selector != undefined && options.storage_manual_remove_trigger_selector != null){
+    		if(options.debug){	console.debug("storage_manual_remove_trigger_selector: " + options.storage_manual_remove_trigger_selector); }
+    		$(options.storage_manual_remove_trigger_selector).click(function(){
+    			storage_remove();
+    			location.reload(); //刷新页面
+    		});
+    	}
+    	
+    	function storage_load(){
     		
     		var storage_count = 0;
     		$(input_selector).each(function(){
@@ -58,12 +83,13 @@
     			}
     		});
     		if(storage_count > 0) { options.load_ready_callback(); }
-    	});
+    	}
     	
-    	//监控表单内容变化并存入localStorage FIXME 动态写入的内容监控不到
-    	this.ready(function(){
-    		$(input_selector).change(function(){
-    			
+    	function storage_save(){
+			
+    		var _events = options.storage_events.join(" ");
+    		if(options.debug){	console.debug("storage_events: " + _events); }
+    		$(input_selector).bind(_events, function(){
     			if(this.value != undefined && this.value != null){
     				var storage_key = options.storage_name_perfix + this.name;
     				var storage_value = this.value;
@@ -73,17 +99,16 @@
     			}
     			options.save_ready_callback();
     		});
-    	});
+    	}
     	
-    	//表单提交时自动清空此表单所有暂存内容
-    	this.submit(function(){
+    	function storage_remove(){
     		$(input_selector).each(function(){
     			var storage_key = options.storage_name_perfix + this.name;
     			localStorage.removeItem(storage_key);
     			if(options.debug){ console.debug("Remove from localStorage [" + storage_key + "]"); };
     		});
     		options.remove_ready_callback();
-    	});
+    	}
     	
     	return this;
     };
