@@ -34,8 +34,11 @@
     	var options = $.extend({
     		storage_name_perfix : ( this.context.URL + form_selector + "@" ), //暂存的命名前缀
     		storage_events : ['change'], //触发暂存的事件
-    		storage_dom_css : {"font-style":"oblique"}, //暂存内容的css(用于区分原始内容与暂存内容)
+    		storage_dom_class : "_jquery_form_local_storage", //暂存内容的class(用于区分原始内容与暂存内容)
     		storage_manual_remove_trigger_selector : "#storage_manual_remove_trigger", //手动清除暂存的触发器
+    		storage_remove_on_submit : true, //是否在表单提交时清空暂存
+    		storage_automatic_remove_flag_selector : "input[name='storage_automatic_remove_flag']", //用于触发暂存自动清空的flag（storage_remove_on_submit = false 的情况下才生效）
+    		storage_automatic_remove_flag_value : 1, //用于触发暂存自动清空的flag的value（storage_remove_on_submit = false 的情况下才生效）
     		load_ready_callback : function(){}, //暂存内容加载完毕回调
     		save_ready_callback : function(){}, //暂存内容保存完毕回调
     		remove_ready_callback : function(){}, //暂存内容删除完毕回调
@@ -43,26 +46,34 @@
         },
         options || {});
     	
-    	if(options.debug){	console.debug("storage_name_perfix: " + options.storage_name_perfix); }
+    	if(options.debug){
+    		$.each(options, function(k, v){
+    			console.debug(k + ": " + v);
+    		});
+    	}
     	
-    	//表单加载完毕后从localStorage中载入暂存的表单内容
     	this.ready(function(){
-    		storage_load();
+    		storage_load(); //表单加载完毕后从localStorage中载入暂存的表单内容
+    		storage_save(); //监控表单内容变化并存入localStorage FIXME 动态写入的内容监控不到
     	});
     	
-    	//监控表单内容变化并存入localStorage FIXME 动态写入的内容监控不到
     	this.ready(function(){
-    		storage_save();
+    		if( !options.storage_remove_on_submit && options.storage_automatic_remove_flag_selector != undefined ){ //如果指定了用于触发暂存自动清空的flag
+    			if( $(options.storage_automatic_remove_flag_selector).val() == options.storage_automatic_remove_flag_value ){ //若flag值满足条件则清空此表单所有暂存内容
+    				storage_remove();
+    			}
+    		}
     	});
     	
-    	//表单提交时自动清空此表单所有暂存内容
+    	//表单提交时的行为
     	this.submit(function(){
-    		storage_remove();
+    		if(options.storage_remove_on_submit){ //若使用默认设置的storage_remove_on_submit，则表单提交时自动清空此表单所有暂存内容
+    			storage_remove();
+    		}
     	});
     	
     	//手动清空此表单的暂存内容
     	if(options.storage_manual_remove_trigger_selector != undefined && options.storage_manual_remove_trigger_selector != null){
-    		if(options.debug){	console.debug("storage_manual_remove_trigger_selector: " + options.storage_manual_remove_trigger_selector); }
     		$(options.storage_manual_remove_trigger_selector).click(function(){
     			storage_remove();
     			location.reload(); //刷新页面
@@ -77,7 +88,7 @@
     			var storage_value = localStorage.getItem(storage_key);
     			if(storage_value != undefined && storage_value != null){
     				$(this).val(storage_value);
-    				$(this).css(options.storage_dom_css);
+    				$(this).addClass(options.storage_dom_class); //为暂存内容加载样式
     				if(options.debug){ console.debug("Load from localStorage [" + storage_key + " : " + storage_value + "]"); };
     				storage_count++;
     			}
@@ -88,13 +99,12 @@
     	function storage_save(){
 			
     		var _events = options.storage_events.join(" ");
-    		if(options.debug){	console.debug("storage_events: " + _events); }
-    		$(input_selector).bind(_events, function(){
+    		$(input_selector).live(_events, function(){
     			if(this.value != undefined && this.value != null){
     				var storage_key = options.storage_name_perfix + this.name;
     				var storage_value = this.value;
     				localStorage.setItem(storage_key, storage_value);
-    				$(this).css(options.storage_dom_css);
+    				$(this).addClass(options.storage_dom_class);
     				if(options.debug){ console.debug("Save to localStorage [" + storage_key + " : " + storage_value + "]"); };
     			}
     			options.save_ready_callback();
@@ -105,6 +115,7 @@
     		$(input_selector).each(function(){
     			var storage_key = options.storage_name_perfix + this.name;
     			localStorage.removeItem(storage_key);
+    			$(this).removeClass(options.storage_dom_class); //去掉暂存的样式
     			if(options.debug){ console.debug("Remove from localStorage [" + storage_key + "]"); };
     		});
     		options.remove_ready_callback();
